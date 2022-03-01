@@ -101,47 +101,6 @@ void draw_loop(GLFWwindow *window) {
 	camera.position = camera_original_position;
 	camera.look_at(sVector3{0.0f, 0.0f, 0.0f});
 
-	sSkyBoxRenderer skybox_renderer = {};
-	sScene scene = {};
-	scene.init();
-
-#ifdef _WIN32
-	skybox_renderer.init("..\\resources\\textures/skybox_");
-
-	Parser::load_gltf_model(&scene,
-							"..\\resources\\models\\sponza\\sponza.gltf",
-							false);
-
-	int sponza_id = scene.node_name_index_storage.get_int("Sponza",
-														  7);
-
-	Parser::load_gltf_model(&scene,
-							"..\\resources\\models\\helmet\\SciFiHelmet.gltf", false);
-
-	int scifi_helm_material = scene.material_name_index_storage.get_int("SciFiHelmet",
-																		12);
-	scene.materials[scifi_helm_material].add_shader("..\\resources\\shaders\\pbr.vs",
-													"..\\resources\\shaders\\pbr.fs");
-#else
-	skybox_renderer.init("resources/textures/skybox_");
-
-	Parser::load_gltf_model(&scene,
-							"resources/models/sponza/sponza.gltf",
-							false);
-
-	int sponza_id = scene.node_name_index_storage.get_int("Sponza",
-														  7);
-
-	Parser::load_gltf_model(&scene,
-							"resources/models/helmet/SciFiHelmet.gltf",
-							false);
-
-	int scifi_helm_material = scene.material_name_index_storage.get_int("SciFiHelmet",
-																		12);
-
-	scene.materials[scifi_helm_material].add_shader("resources/shaders/pbr.vs",
-													"resources/shaders/pbr.fs");
-#endif
 
 	double prev_frame_time = glfwGetTime();
 
@@ -217,45 +176,8 @@ void draw_loop(GLFWwindow *window) {
 		}
 
 
-		// ImGui
-		ImGui::Begin("Scene control");
 
-		ImGui::SliderFloat3("Light position", light_position.raw_values, -20.0f, 20.0f);
-
-		ImGui::SliderFloat("Sponza Y position", &scene.models[sponza_id].py, -10.0f, 5.0f);
-		// Rotate the camera arround
-		if (ImGui::SliderFloat("Camera rotation", &camera_angle, 0.01f, 360.0f)) {
-			camera.position.x = (camera_original_position.x * cos(camera_angle / (180.0f / PI))) - (camera_original_position.z * sin(camera_angle/ (180.0f / PI)));
-			camera.position.z = (camera_original_position.z * sin(camera_angle/ (180.0f / PI))) + (camera_original_position.x * cos(camera_angle/ (180.0f / PI)));
-		}
-
-		ImGui::SliderFloat("Camera up-down", &camera.position.y, -3.01f, 8.0f);
-
-		//camera.look_at({0.0f, 0.0f, 0.0f});
-		camera.compute_view_matrix();
-		camera.get_perspective_viewprojection_matrix(90.0f, 10000.0f, 0.0001f, aspect_ratio, &viewproj_mat);
-
-		skybox_renderer.render(viewproj_mat,
-							   camera);
-
-		scene.render(camera,
-					 viewproj_mat,
-					 light_position);
-
-		ImGui::End();
-
-		ImGui::Begin("Scene Nodes");
-		ImGui::Text("Camera: %f %f %f", camera.position.x, camera.position.y, camera.position.z);
-		for(uint16_t index = 0; index < MAX_NODE_COUNT; index++) {
-			if (!scene.node_is_full[index]) {
-				continue;
-			}
-			sMat44 *mod = &scene.models[index];
-
-			ImGui::Text("%s: %f %f %f", scene.node_name[index], mod->px, mod->py, mod->pz);
-		}
-		ImGui::End();
-
+		// Scene rendering
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

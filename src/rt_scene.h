@@ -1,6 +1,7 @@
 #ifndef RT_SCENE_H_
 #define RT_SCENE_H_
 
+#include "color.h"
 #include "math.h"
 #include "render_context.h"
 #include "texture.h"
@@ -16,21 +17,25 @@ struct sRT_Scene {
     bool       is_obj_enabled[RT_OBJ_COUNT] = {};
     eRT_Prim   obj_primitive[RT_OBJ_COUNT] {};
     sTransform obj_transforms[RT_OBJ_COUNT] = {};
-    sVector3   obj_color[RT_OBJ_COUNT] = {};
+    uColor_RGBA8   obj_color[RT_OBJ_COUNT] = {};
 
     //
     uint16_t render_width = 0;
     uint16_t render_heigth = 0;
-    sTexture text_screen = {};
+
+    uColor_RGBA8 *framebuffer = NULL;
 
     void init() {
         memset(is_obj_enabled, false, sizeof(sRT_Scene::is_obj_enabled));
 
     }
 
+    inline uint16_t get_fb_index(const uint16_t x, const uint16_t y) const {
+        return x + (y * render_width);
+    }
 
     void render_to_texture(const sCamera &camera,
-                           const float FOV) const {
+                           const float FOV) {
         sVector3 ray_origin = camera.position;
 
         float tan_half_FOV = tan(to_radians(FOV) / 2.0f);
@@ -38,6 +43,11 @@ struct sRT_Scene {
 
         sMat44 inv_view_mat;
         camera.view_mat.invert(&inv_view_mat);
+
+        if (framebuffer != NULL) {
+            free(framebuffer);
+        }
+        framebuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
 
         for (uint16_t x = 0; x < render_width; x++) {
             for (uint16_t y = 0; y < render_heigth; y++) {
@@ -49,7 +59,8 @@ struct sRT_Scene {
 
 
                 // Raytracing
-                sVector3 out_color = {};
+                // TODO: extract more info from the collision: point, depht...
+                uColor_RGBA8 out_color = {};
                 float out_depth = -1000.0f;
                 for(uint16_t i = 0; i <  RT_OBJ_COUNT; i++) {
                     if (!is_obj_enabled[i]) {
@@ -71,8 +82,8 @@ struct sRT_Scene {
                     }
                 }
 
-                // Store on texture
-                // frame[x][y] = out_color;
+                // Store color on texture
+                framebuffer[get_fb_index(x, y)] = out_color;
             }
         }
     }

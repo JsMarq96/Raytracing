@@ -2,17 +2,11 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 
-#include "skybox_renderer.h"
-#include "tiny_gltf.h"
+#include "color.h"
+#include "rt_primitives.h"
+#include "rt_scene.h"
 
-#include "mesh.h"
-#include "material.h"
-#include "mesh_renderer.h"
-#include "shader.h"
 #include "input_layer.h"
-#include "gltf_parser.h"
-#include "gltf_scene.h"
-
 
 // Dear IMGUI
 #include "imgui/imgui.h"
@@ -104,8 +98,6 @@ void draw_loop(GLFWwindow *window) {
 
 	double prev_frame_time = glfwGetTime();
 
-	sMat44 viewproj_mat = {};
-	sMat44 proj_mat = {};
 
 	float camera_angle = 274.001f;
 
@@ -116,6 +108,11 @@ void draw_loop(GLFWwindow *window) {
 
 	sVector3 light_position = {0.0f, 6.0f, 0.0f};
 
+	// RT SCENE CONFIG
+	sRT_Scene rt_scene = {};
+
+	rt_scene.init();
+
 	while(!glfwWindowShouldClose(window)) {
 		// Draw loop
 		int width, heigth;
@@ -124,6 +121,9 @@ void draw_loop(GLFWwindow *window) {
 		glfwGetFramebufferSize(window, &width, &heigth);
 		// Set to OpenGL viewport size anc coordinates
 		glViewport(0,0, width, heigth);
+
+		rt_scene.render_heigth = heigth;
+		rt_scene.render_width = width;
 
 		float aspect_ratio = (float) width / heigth;
 
@@ -138,43 +138,6 @@ void draw_loop(GLFWwindow *window) {
 		double curr_frame_time = glfwGetTime();
 		double elapsed_time = curr_frame_time - prev_frame_time;
 		prev_frame_time = curr_frame_time;
-
-		// Mouse position control
-		glfwGetCursorPos(window, &temp_mouse_x, &temp_mouse_y);
-
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
-			pitch += 0.1f * (input_state.mouse_pos_x - temp_mouse_x);
-			yaw += 0.1f * (input_state.mouse_pos_y - temp_mouse_y);
-
-			if (yaw > 90.0f) {
-				yaw = 90.0f;
-			} else if (yaw < -90.0f) {
-				yaw = -90.0f;
-			}
-		}
-
-		camera.set_rotation(yaw, pitch);
-
-		input_state.mouse_speed_x = abs(input_state.mouse_pos_x - temp_mouse_x) * elapsed_time;
-		input_state.mouse_speed_y = abs(input_state.mouse_pos_y - temp_mouse_y) * elapsed_time;
-		input_state.mouse_pos_x = temp_mouse_x;
-		input_state.mouse_pos_y = temp_mouse_y;
-
-
-		// Camera control
-		if (glfwGetKey(window, GLFW_KEY_W)) {
-			camera.position = camera.position.sum(camera.f.normalize().mult(elapsed_time * 1.5f));
-		}
-		if (glfwGetKey(window, GLFW_KEY_S)) {
-			camera.position = camera.position.sum(camera.f.normalize().mult(-elapsed_time * 1.5f));
-		}
-		if (glfwGetKey(window, GLFW_KEY_A)) {
-			camera.position = camera.position.sum(camera.s.normalize().mult(-elapsed_time * 1.5f));
-		}
-		if (glfwGetKey(window, GLFW_KEY_D)) {
-			camera.position = camera.position.sum(camera.s.normalize().mult(elapsed_time * 1.5f));
-		}
-
 
 
 		// Scene rendering

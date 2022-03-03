@@ -54,6 +54,9 @@ struct sGPU_Texture {
                      data_type,
                      raw_data);
 
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 

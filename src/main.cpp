@@ -14,6 +14,7 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_glfw.h"
+#include "texture_gpu.h"
 
 #define WIN_WIDTH	640
 #define WIN_HEIGHT	480
@@ -97,9 +98,7 @@ void draw_loop(GLFWwindow *window) {
 	camera.position = camera_original_position;
 	camera.look_at(sVector3{0.0f, 0.0f, 0.0f});
 
-
 	double prev_frame_time = glfwGetTime();
-
 
 	float camera_angle = 274.001f;
 
@@ -112,26 +111,35 @@ void draw_loop(GLFWwindow *window) {
 
 	// RT SCENE CONFIG
 	sRT_Scene rt_scene = {};
-
 	rt_scene.init();
+
+	sGPU_Texture framebuffer = {};
+
+	sQuadRenderer quad_render = {};
+	quad_render.init();
 
 	while(!glfwWindowShouldClose(window)) {
 		// Draw loop
 		int width, heigth;
 		double temp_mouse_x, temp_mouse_y;
-		
+
+
 		glfwGetFramebufferSize(window, &width, &heigth);
 		// Set to OpenGL viewport size anc coordinates
 		glViewport(0,0, width, heigth);
 
-		rt_scene.render_heigth = heigth;
-		rt_scene.render_width = width;
+
+		rt_scene.render_heigth = heigth / 2;
+		rt_scene.render_width = width / 2;
 
 		float aspect_ratio = (float) width / heigth;
 
-		// OpenGL stuff
+		// FRAME UPDATE ===============
+
+		// FRAME RENDER ===============
 		glClearColor(0.5f, 0.0f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
 		ImGui_ImplOpenGL3_NewFrame();
     	ImGui_ImplGlfw_NewFrame();
@@ -141,8 +149,11 @@ void draw_loop(GLFWwindow *window) {
 		double elapsed_time = curr_frame_time - prev_frame_time;
 		prev_frame_time = curr_frame_time;
 
+		rt_scene.render_to_texture(camera,
+								   100.0f,
+								   &framebuffer);
 
-		// Scene rendering
+		quad_render.render(framebuffer.gpu_id);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

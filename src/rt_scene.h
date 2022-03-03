@@ -81,7 +81,6 @@ struct sRT_Scene {
                         out_depth = obj_depth;
                         out_color = obj_color[i];
                     }
-                    std::cout << "bruh" << std::endl;
                 }
 
                 // Store color on texture

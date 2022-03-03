@@ -2,12 +2,15 @@
 #define RT_SCENE_H_
 
 #include "color.h"
+#include "glcorearb.h"
 #include "math.h"
 #include "render_context.h"
 #include "texture.h"
 #include "transform.h"
 #include "rt_primitives.h"
 #include "camera.h"
+#include "texture_gpu.h"
+
 #include <cstdint>
 
 #define RT_OBJ_COUNT 50
@@ -20,22 +23,22 @@ struct sRT_Scene {
     uColor_RGBA8   obj_color[RT_OBJ_COUNT] = {};
 
     //
-    uint16_t render_width = 0;
-    uint16_t render_heigth = 0;
-
-    uColor_RGBA8 *framebuffer = NULL;
+    uint32_t render_width = 0;
+    uint32_t render_heigth = 0;
 
     void init() {
         memset(is_obj_enabled, false, sizeof(sRT_Scene::is_obj_enabled));
-
+        memset(obj_color, 0, sizeof(sRT_Scene::obj_color));
     }
 
-    inline uint16_t get_fb_index(const uint16_t x, const uint16_t y) const {
+    // Helper function
+    inline uint32_t get_fb_index(const uint32_t x, const uint32_t y) const {
         return x + (y * render_width);
     }
 
     void render_to_texture(const sCamera &camera,
-                           const float FOV) {
+                           const float FOV,
+                           sGPU_Texture *framebuffer) const {
         sVector3 ray_origin = camera.position;
 
         float tan_half_FOV = tan(to_radians(FOV) / 2.0f);
@@ -44,13 +47,11 @@ struct sRT_Scene {
         sMat44 inv_view_mat;
         camera.view_mat.invert(&inv_view_mat);
 
-        if (framebuffer != NULL) {
-            free(framebuffer);
-        }
-        framebuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
+        uColor_RGBA8 *raw_fbuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
+        memset(raw_fbuffer, 0, sizeof(uColor_RGBA8) * render_heigth * render_width);
 
-        for (uint16_t x = 0; x < render_width; x++) {
-            for (uint16_t y = 0; y < render_heigth; y++) {
+        for (uint32_t x = 0; x < render_width; x++) {
+            for (uint32_t y = 0; y < render_heigth; y++) {
                 // Compute the ray dir:
                 float u = (2 * (x + 0.5f) / (float) render_width - 1) * aspect_ratio * camera.zoom;
                 float v = (1 - 2 * (y + 0.5) / (float) render_heigth) * camera.zoom;
@@ -60,7 +61,7 @@ struct sRT_Scene {
 
                 // Raytracing
                 // TODO: extract more info from the collision: point, depht...
-                uColor_RGBA8 out_color = {};
+                uColor_RGBA8 out_color = {0, 0, 255, 1};
                 float out_depth = -1000.0f;
                 for(uint16_t i = 0; i <  RT_OBJ_COUNT; i++) {
                     if (!is_obj_enabled[i]) {
@@ -80,12 +81,21 @@ struct sRT_Scene {
                         out_depth = obj_depth;
                         out_color = obj_color[i];
                     }
+                    std::cout << "bruh" << std::endl;
                 }
 
                 // Store color on texture
-                framebuffer[get_fb_index(x, y)] = out_color;
+                raw_fbuffer[get_fb_index(x, y)] = out_color;
             }
         }
+        // Upload raw data to GPU texture
+        framebuffer->upload_raw_data((void*) raw_fbuffer,
+                                     render_width,
+                                     render_heigth,
+                                     GL_RGBA8,
+                                     GL_UNSIGNED_BYTE);
+
+        free(raw_fbuffer);
     }
 };
 

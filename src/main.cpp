@@ -3,6 +3,8 @@
 #include <GLFW/glfw3.h>
 
 #include "color.h"
+#include "quaternion.h"
+#include "render_quad.h"
 #include "rt_primitives.h"
 #include "rt_scene.h"
 

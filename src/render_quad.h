@@ -47,7 +47,7 @@ struct sQuadRenderer {
 
         // TODO: Config shader & material
         quad_material.shader.load_file_shaders("resources/shaders/quad.vs",
-                                               "resources/shaders/quad.fs");
+                                               "resources/shaders/quad_without_depth.fs");
     }
 
     void render(const uint32_t color_texture,
@@ -68,8 +68,23 @@ struct sQuadRenderer {
 
         quad_material.disable();
         glBindVertexArray(0);
-
     }
+
+    void render(const uint32_t color_texture) const {
+        glBindVertexArray(VAO);
+        quad_material.enable();
+
+        // Bind FBO color / texture color
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, color_texture);
+        quad_material.shader.set_uniform("u_color_text", 0);
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        quad_material.disable();
+        glBindVertexArray(0);
+    }
+
 };
 
 #endif // RENDER_QUAD_H_

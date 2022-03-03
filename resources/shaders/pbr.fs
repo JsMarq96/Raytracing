@@ -1,6 +1,6 @@
 #version 330 core
 
-out vec4 frag_col;
+layout(location = 0) out vec4 frag_col;
 
 varying vec3 v_world_position;
 varying vec4 v_clip_position;

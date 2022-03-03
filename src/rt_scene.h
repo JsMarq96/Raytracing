@@ -44,20 +44,17 @@ struct sRT_Scene {
         float tan_half_FOV = tan(to_radians(FOV) / 2.0f);
         float aspect_ratio = render_width / (float) render_heigth;
 
-        sMat44 inv_view_mat;
-        camera.view_mat.invert(&inv_view_mat);
-
         uColor_RGBA8 *raw_fbuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
         memset(raw_fbuffer, 0, sizeof(uColor_RGBA8) * render_heigth * render_width);
 
         for (uint32_t x = 0; x < render_width; x++) {
             for (uint32_t y = 0; y < render_heigth; y++) {
                 // Compute the ray dir:
-                float u = (2 * (x + 0.5f) / (float) render_width - 1) * aspect_ratio * camera.zoom;
-                float v = (1 - 2 * (y + 0.5) / (float) render_heigth) * camera.zoom;
-
-                sVector3 ray_dir = inv_view_mat.multiply(sVector3{u, v, -1.0f}).normalize();
-
+                float u = (x / (float) render_width) - 0.5f;
+                float v = (y / (float) render_heigth) - 0.5f;
+                // (u * cam.right) + (v * cam.up) + cam.pos + cam.forward
+                sVector3 image_coords = camera.s.mult(u).sum(camera.u.mult(v)).sum(camera.position).sum(camera.f);
+                sVector3 ray_dir = image_coords.subs(ray_origin);
 
                 // Raytracing
                 // TODO: extract more info from the collision: point, depht...
@@ -68,7 +65,7 @@ struct sRT_Scene {
                         continue;
                     }
 
-                    float obj_depth = 0.0f;
+                    float obj_depth = -1000.0f;
                     switch(obj_primitive[i]) {
                         case RT_SPHERE: obj_depth = ray_sphere_collision(ray_origin,
                                                                          ray_dir,

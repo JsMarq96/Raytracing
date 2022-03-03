@@ -24,14 +24,15 @@ inline float ray_sphere_collision(const sVector3 &ray_origin,
                                  const sTransform &sphere_transform) {
     float radius = sphere_transform.scale.x;
     sVector3 oc = ray_origin.subs(sphere_transform.position);
+    float a = dot_prod(ray_dir, ray_dir);
     float b = dot_prod(oc, ray_dir);
     float c = dot_prod(oc, oc) - (radius * radius);
-    float h = (b * b) - c;
+    float h = (b * b) - 4 * a * c;
     if (h < 0.0f) {
         return -1.0f;
     }
 
-    return -b - sqrt(h);
+    return 1; // TODO: return distance
 }
 
 // ===================

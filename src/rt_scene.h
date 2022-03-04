@@ -10,6 +10,7 @@
 #include "rt_primitives.h"
 #include "camera.h"
 #include "texture_gpu.h"
+#include "vector.h"
 
 #include <cstdint>
 
@@ -39,10 +40,18 @@ struct sRT_Scene {
     void render_to_texture(const sCamera &camera,
                            const float FOV,
                            sGPU_Texture *framebuffer) const {
-        sVector3 ray_origin = camera.position;
+        sVector3 ray_origin = sVector3{0.0f, 0.0f, 0.0f};
 
         float tan_half_FOV = tan(to_radians(FOV) / 2.0f);
         float aspect_ratio = render_width / (float) render_heigth;
+
+        float viewport_height = 2.0;
+        float viewport_width = viewport_height * aspect_ratio;
+
+        sVector3 viewport_horizontal = sVector3{viewport_width, 0.0f, 0.0f};
+        sVector3 viewport_vertical = sVector3{0.0f, viewport_height, 0.0f};
+        sVector3 viewport_origin = ray_origin.subs(viewport_horizontal.mult(0.5f).subs(viewport_vertical.mult(0.5f)));
+        viewport_origin = viewport_origin.subs(sVector3{0.0f, 0.0f, 1.0f}); // focal length / FOV??
 
         uColor_RGBA8 *raw_fbuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
         memset(raw_fbuffer, 0, sizeof(uColor_RGBA8) * render_heigth * render_width);
@@ -50,11 +59,16 @@ struct sRT_Scene {
         for (uint32_t x = 0; x < render_width; x++) {
             for (uint32_t y = 0; y < render_heigth; y++) {
                 // Compute the ray dir:
-                float u = (x / (float) render_width) - 0.5f;
-                float v = (y / (float) render_heigth) - 0.5f;
-                // (u * cam.right) + (v * cam.up) + cam.pos + cam.forward
-                sVector3 image_coords = camera.s.mult(u).sum(camera.u.mult(v)).sum(camera.position).sum(camera.f);
-                sVector3 ray_dir = image_coords.subs(ray_origin);
+                float u = float(x) / (render_width);
+                float v = float(y) / (render_heigth);
+
+                u *= 255.0f;
+                v *= 255.0f;
+
+                sVector3 ray_dir = {};
+
+                raw_fbuffer[get_fb_index(x, y)] = uColor_RGBA8{ (uint8_t) u,  (uint8_t) v, 0, 255};
+                continue;
 
                 // Raytracing
                 // TODO: extract more info from the collision: point, depht...

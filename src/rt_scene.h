@@ -62,13 +62,14 @@ struct sRT_Scene {
                 float u = float(x) / (render_width);
                 float v = float(y) / (render_heigth);
 
+                sVector3 ray_dir = sVector3{u, v, -2.0f}.subs(ray_origin);
+
                 u *= 255.0f;
                 v *= 255.0f;
 
-                sVector3 ray_dir = {};
 
                 raw_fbuffer[get_fb_index(x, y)] = uColor_RGBA8{ (uint8_t) u,  (uint8_t) v, 0, 255};
-                continue;
+                //continue;
 
                 // Raytracing
                 // TODO: extract more info from the collision: point, depht...

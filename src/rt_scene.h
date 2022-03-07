@@ -43,7 +43,7 @@ struct sRT_Scene {
         float tan_half_FOV = 2.0f * tan(to_radians(FOV / 2.0f));
         float aspect_ratio = render_width / (float) render_heigth;
 
-        sVector3 ray_origin = sVector3{0.0f, 0.0f, 0.0f};
+        sVector3 ray_origin = camera.position;
 
         uColor_RGBA8 *raw_fbuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
         memset(raw_fbuffer, 0, sizeof(uColor_RGBA8) * render_heigth * render_width);
@@ -58,6 +58,7 @@ struct sRT_Scene {
                 u *= aspect_ratio;
 
                 sVector3 ray_dir = {u, v, -tan_half_FOV};
+                ray_dir = camera.view_mat.multiply(ray_dir);
 
                 // Raytracing
                 // TODO: extract more info from the collision: point, depht...

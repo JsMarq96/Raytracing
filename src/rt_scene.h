@@ -40,61 +40,51 @@ struct sRT_Scene {
     void render_to_texture(const sCamera &camera,
                            const float FOV,
                            sGPU_Texture *framebuffer) const {
-        sVector3 ray_origin = sVector3{0.0f, 0.0f, 0.0f};
-
-        float tan_half_FOV = tan(to_radians(FOV) / 2.0f);
+        float tan_half_FOV = 2.0f * tan(to_radians(FOV / 2.0f));
         float aspect_ratio = render_width / (float) render_heigth;
 
-        float viewport_height = 2.0;
-        float viewport_width = viewport_height * aspect_ratio;
-
-        sVector3 viewport_horizontal = sVector3{viewport_width, 0.0f, 0.0f};
-        sVector3 viewport_vertical = sVector3{0.0f, viewport_height, 0.0f};
-        sVector3 viewport_origin = ray_origin.subs(viewport_horizontal.mult(0.5f).subs(viewport_vertical.mult(0.5f)));
-        viewport_origin = viewport_origin.subs(sVector3{0.0f, 0.0f, 1.0f}); // focal length / FOV??
+        sVector3 ray_origin = sVector3{0.0f, 0.0f, 0.0f};
 
         uColor_RGBA8 *raw_fbuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
         memset(raw_fbuffer, 0, sizeof(uColor_RGBA8) * render_heigth * render_width);
 
+        uColor_RGBA8 sky_color_1 = {255, 255, 255, 255};
+        uColor_RGBA8 sky_color_2 = {0, 0, 0, 255};
+
         for (uint32_t x = 0; x < render_width; x++) {
             for (uint32_t y = 0; y < render_heigth; y++) {
-                // Compute the ray dir:
-                float u = float(x) / (render_width);
-                float v = float(y) / (render_heigth);
+                float u = ((float) x / render_width) - 0.5f;
+                float v = ((float) y / render_heigth) - 0.5f;
+                u *= aspect_ratio;
 
-                sVector3 ray_dir = sVector3{u, v, -2.0f}.subs(ray_origin);
-
-                u *= 255.0f;
-                v *= 255.0f;
-
-
-                raw_fbuffer[get_fb_index(x, y)] = uColor_RGBA8{ (uint8_t) u,  (uint8_t) v, 0, 255};
-                //continue;
+                sVector3 ray_dir = {u, v, -tan_half_FOV};
 
                 // Raytracing
                 // TODO: extract more info from the collision: point, depht...
-                uColor_RGBA8 out_color = {0, 0, 255, 1};
-                float out_depth = -1000.0f;
+
+                // Compute the background gradient
+                float t =0.5f * (ray_dir.normalize().y + 1.0f);
+                uColor_RGBA8 out_color = LERP(sky_color_1, sky_color_2, t);
+
                 for(uint16_t i = 0; i <  RT_OBJ_COUNT; i++) {
                     if (!is_obj_enabled[i]) {
                         continue;
                     }
 
-                    float obj_depth = -1000.0f;
+                    bool hit = false;
                     switch(obj_primitive[i]) {
-                        case RT_SPHERE: obj_depth = ray_sphere_collision(ray_origin,
-                                                                         ray_dir,
-                                                                         obj_transforms[i]); break;
+                        case RT_SPHERE: hit = ray_sphere_collision(ray_origin,
+                                                                   ray_dir,
+                                                                   obj_transforms[i]); break;
                         case RT_PLANE: break;
                         case RT_PRIMITIVE_COUNT: break; // For the warning
                     }
 
-                    if (obj_depth > out_depth) {
-                        out_depth = obj_depth;
+                    if (hit) {
                         out_color = obj_color[i];
                     }
                 }
-
+                //std::cout << out_depth << std::endl;
                 // Store color on texture
                 raw_fbuffer[get_fb_index(x, y)] = out_color;
             }

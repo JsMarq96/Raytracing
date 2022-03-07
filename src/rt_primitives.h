@@ -19,20 +19,18 @@ enum eRT_Prim : uint8_t {
 // ===================
 
 // ? is this okay?
-inline float ray_sphere_collision(const sVector3 &ray_origin,
+inline bool ray_sphere_collision(const sVector3 &ray_origin,
                                  const sVector3 &ray_dir,
                                  const sTransform &sphere_transform) {
     float radius = sphere_transform.scale.x;
-    sVector3 oc = ray_origin.subs(sphere_transform.position);
-    float a = dot_prod(ray_dir, ray_dir);
-    float b = dot_prod(oc, ray_dir);
-    float c = dot_prod(oc, oc) - (radius * radius);
-    float h = (b * b) - 4 * a * c;
-    if (h < 0.0f) {
-        return -1.0f;
-    }
+    sVector3 L = ray_origin.subs(sphere_transform.position);
+    float a  = dot_prod(ray_dir, ray_dir);
+    float b = 2.0f * dot_prod(ray_dir, L);
+    float c = dot_prod(L, L) - (radius * radius);
 
-    return 1; // TODO: return distance
+    float res_1 = 0.0f, res_2 = 0.0f;
+
+    return solve_quadratic_equation(a, b, c, &res_1, &res_2);
 }
 
 // ===================

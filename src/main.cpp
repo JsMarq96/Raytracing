@@ -94,9 +94,9 @@ void draw_loop(GLFWwindow *window) {
 
 	// Config scene
 	sCamera camera;
-	sVector3 camera_original_position = sVector3{3.0f, 3.0f, 3.0f};
+	sVector3 camera_original_position = sVector3{0.0f, 0.0f, 0.0f};
 	camera.position = camera_original_position;
-	camera.look_at(sVector3{0.0f, 0.0f, 0.0f});
+	camera.look_at(sVector3{0.0f, 0.0f, 2.0f});
 
 	double prev_frame_time = glfwGetTime();
 
@@ -115,8 +115,8 @@ void draw_loop(GLFWwindow *window) {
 
 	rt_scene.is_obj_enabled[0] = true;
 	rt_scene.obj_primitive[0] = RT_SPHERE;
-	rt_scene.obj_transforms[0].scale = {0.5f, 0.5f, 0.0f};
-	rt_scene.obj_transforms[0].position = {0.0f, 0.0f, 0.0f};
+	rt_scene.obj_transforms[0].scale = {0.25f, 0.5f, 0.0f};
+	rt_scene.obj_transforms[0].position = {0.0f, 0.0f, 2.0f};
 	rt_scene.obj_color[0] = {255, 0, 0, 1};
 
 	sGPU_Texture framebuffer = {};

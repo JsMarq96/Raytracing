@@ -63,7 +63,6 @@ struct sRT_Scene {
                 // To world view <- is this ok..???
                 ray_dir = camera.view_mat.multiply(ray_dir);
 
-
                 // Compute the background gradient
                 float t =0.5f * (ray_dir.normalize().y + 1.0f);
                 uColor_RGBA8 out_color = LERP(sky_color_1, sky_color_2, t);

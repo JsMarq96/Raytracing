@@ -119,6 +119,12 @@ void draw_loop(GLFWwindow *window) {
 	rt_scene.obj_transforms[0].position = {0.0f, 0.0f, 2.0f};
 	rt_scene.obj_color[0] = {255, 0, 0, 1};
 
+	rt_scene.is_obj_enabled[1] = true;
+	rt_scene.obj_primitive[1] = RT_SPHERE;
+	rt_scene.obj_transforms[1].scale = {0.35f, 0.5f, 0.0f};
+	rt_scene.obj_transforms[1].position = {0.35f, 0.1f, 4.0f};
+	rt_scene.obj_color[1] = {0, 255, 0, 1};
+
 	sGPU_Texture framebuffer = {};
 
 	sQuadRenderer quad_render = {};

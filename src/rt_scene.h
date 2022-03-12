@@ -23,7 +23,9 @@ struct sRT_Scene {
     sTransform obj_transforms[RT_OBJ_COUNT] = {};
     uColor_RGBA8   obj_color[RT_OBJ_COUNT] = {};
 
-    //
+    // Light data
+    sVector3  light_position = {};
+    uColor_RGBA8 light_color = {};
     uint32_t render_width = 0;
     uint32_t render_heigth = 0;
 
@@ -74,7 +76,7 @@ struct sRT_Scene {
                 ray_dir = ray_dir.subs(ray_origin).normalize();
 
                 // Compute the background gradient
-                float t =0.5f * (ray_dir.normalize().y + 1.0f);
+                float t = 0.5f * (ray_dir.normalize().y + 1.0f);
                 uColor_RGBA8 out_color = LERP(sky_color_1, sky_color_2, t);
 
                 sVector3 col_point = {};
@@ -84,13 +86,35 @@ struct sRT_Scene {
                             ray_dir,
                             &col_point,
                             &col_obj_id)) {
+                    // Add basic diffuse color
                     out_color = obj_color[col_obj_id];
 
                     sVector3 normal = sphere_normal(col_point, obj_transforms[col_obj_id]);
 
-                    normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
+                    // Shadows
+                    // Add a bit of margin, in order to avoid self collisions
+                    sVector3 shadow_ray_origin = col_point.sum(normal.mult(0.0001f));
+                    sVector3 shadow_ray_dir = shadow_ray_origin.subs(light_position).normalize();
+                    //sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin);
+                    sVector3 shadow_col_point = {};
+                    uint16_t shadow_col_id = 0;
+                    // If there is no collision, then, this pixel is on shadow
+                    if (!raycast(shadow_ray_origin,
+                                 shadow_ray_dir,
+                                 &shadow_col_point,
+                                 &shadow_col_id)) {
+                        // Darken the base color
+                        out_color = LERP(out_color, {0, 0, 0, 255}, 0.5f);
+                    } else {
+                        // Draw the base color with a bit of shine
+                        sVector3 l = light_position.subs(col_point).normalize();
+                        float n_dot_l = MAX(dot_prod(l, normal), 0.0f);
 
-                    out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
+                        out_color = LERP(out_color, light_color, n_dot_l);
+                    }
+
+                    //normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
+                    //out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
                 }
                 // Store color on texture
                 raw_fbuffer[get_fb_index(x, y)] = out_color;

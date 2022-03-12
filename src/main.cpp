@@ -125,6 +125,9 @@ void draw_loop(GLFWwindow *window) {
 	rt_scene.obj_transforms[1].position = {0.35f, 0.4f, 4.0f};
 	rt_scene.obj_color[1] = {0, 255, 0, 1};
 
+	rt_scene.light_position = {-1.0f, 5.0f, 0.0f};
+	rt_scene.light_color = {255, 255, 255, 255};
+
 	sGPU_Texture framebuffer = {};
 
 	sQuadRenderer quad_render = {};
@@ -170,7 +173,8 @@ void draw_loop(GLFWwindow *window) {
 
 		quad_render.render(framebuffer.gpu_id);
 
-		ImGui::Begin("Camera control");
+		ImGui::Begin("Scene control");
+		ImGui::SliderFloat3("Light position", rt_scene.light_position.raw_values, -7.0f, 7.0f);
 		ImGui::SliderFloat3("Camera position", camera.position.raw_values, -5.0f, 5.0f);
 		ImGui::SliderFloat("FOV", &FOV, 0.0f, 120.0f);
 		ImGui::End();

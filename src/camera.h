@@ -84,7 +84,7 @@ struct sCamera {
       view_mat.mat_values[2][2] = -f.z;
       view_mat.mat_values[3][0] = -dot_prod(s, position);
       view_mat.mat_values[3][1] = -dot_prod(u, position);
-      view_mat.mat_values[3][2] = dot_prod(f, position); 
+      view_mat.mat_values[3][2] = dot_prod(f, position);
     }
 
   void compute_view_matrix() {
@@ -104,7 +104,7 @@ struct sCamera {
       view_mat.mat_values[3][0] = -dot_prod(s, position);
       view_mat.mat_values[3][1] = -dot_prod(u, position);
       view_mat.mat_values[3][2] = dot_prod(f, position);
-  }
+    }
 
     void
     get_perspective_viewprojection_matrix(const float FOV, 
@@ -118,15 +118,6 @@ struct sCamera {
 
       result->multiply(&tmp);
       //memcpy(result, &tmp, sizeof(sMat44));
-    }
-
-    void
-    get_current_camera_instance(sCurrentCameraInstance  *new_instance) const {
-        new_instance->position.x = position.x * zoom / 2.0f;
-        new_instance->position.y = position.y * zoom / 2.0f;
-        new_instance->position.z = position.z * zoom / 2.0f;
-
-        //get_projection_matrix(&(new_instance->ortho_matrix));
     }
 
   void

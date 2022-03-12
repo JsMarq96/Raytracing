@@ -42,6 +42,8 @@ inline float ray_sphere_collision(const sVector3 &ray_origin,
 // ===================
 // PRIMITIVE NORMALS
 // ===================
-
+inline sVector3 sphere_normal(const sVector3 &point, const sTransform &sphere_transform) {
+    return sphere_transform.position.subs(point).invert().normalize();
+}
 
 #endif // RT_PRIMITIVES_H_

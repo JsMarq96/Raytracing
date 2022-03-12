@@ -94,7 +94,7 @@ void draw_loop(GLFWwindow *window) {
 
 	// Config scene
 	sCamera camera;
-	sVector3 camera_original_position = sVector3{0.0f, 0.0f, 0.0f};
+	sVector3 camera_original_position = sVector3{0.0f, 0.0f, -1.0f};
 	camera.position = camera_original_position;
 	camera.look_at(sVector3{0.0f, 0.0f, 2.0f});
 
@@ -122,7 +122,7 @@ void draw_loop(GLFWwindow *window) {
 	rt_scene.is_obj_enabled[1] = true;
 	rt_scene.obj_primitive[1] = RT_SPHERE;
 	rt_scene.obj_transforms[1].scale = {0.35f, 0.5f, 0.0f};
-	rt_scene.obj_transforms[1].position = {0.35f, 0.1f, 4.0f};
+	rt_scene.obj_transforms[1].position = {0.35f, 0.4f, 4.0f};
 	rt_scene.obj_color[1] = {0, 255, 0, 1};
 
 	sGPU_Texture framebuffer = {};
@@ -140,6 +140,8 @@ void draw_loop(GLFWwindow *window) {
 		// Set to OpenGL viewport size anc coordinates
 		glViewport(0,0, width, heigth);
 
+
+		camera.look_at({0.0f, 0.0f, 2.0f});
 
 		rt_scene.render_heigth = heigth / 2;
 		rt_scene.render_width = width / 2;
@@ -166,6 +168,10 @@ void draw_loop(GLFWwindow *window) {
 								   &framebuffer);
 
 		quad_render.render(framebuffer.gpu_id);
+
+		ImGui::Begin("Camera control");
+		ImGui::SliderFloat3("Camera position", camera.position.raw_values, -5.0f, 5.0f);
+		ImGui::End();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

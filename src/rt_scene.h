@@ -40,7 +40,7 @@ struct sRT_Scene {
     void render_to_texture(const sCamera &camera,
                            const float FOV,
                            sGPU_Texture *framebuffer) const {
-        float tan_half_FOV = 2.0f * tan(to_radians(FOV / 2.0f));
+        float tan_half_FOV = tan(to_radians(FOV / 2.0f));
         float aspect_ratio = render_width / (float) render_heigth;
 
         sVector3 ray_origin = camera.position;
@@ -51,17 +51,27 @@ struct sRT_Scene {
         uColor_RGBA8 sky_color_1 = {255, 255, 255, 255};
         uColor_RGBA8 sky_color_2 = {0, 0, 0, 255};
 
-        for (uint32_t x = 0; x < render_width; x++) {
+        sMat44 inv_view_mat = {};
+        camera.view_mat.invert(&inv_view_mat);
+
+        ray_origin = inv_view_mat.multiply(sVector3{0.0f, 0.0f, 0.0f});
+        ray_origin = camera.position;
+
+         for (uint32_t x = 0; x < render_width; x++) {
             for (uint32_t y = 0; y < render_heigth; y++) {
                 // Copmute NDC coords
                 float u = ((float) x / render_width) - 0.5f;
                 float v = ((float) y / render_heigth) - 0.5f;
-                u *= aspect_ratio;
+                u *= aspect_ratio * tan_half_FOV;
+                v *= tan_half_FOV;
 
                 // Compute the viewpoint of the NDC
-                sVector3 ray_dir = {u, v, -tan_half_FOV};
-                // To world view <- is this ok..???
-                ray_dir = camera.view_mat.multiply(ray_dir);
+                sVector3 ray_dir = {u, v, -1.0f};
+
+                // Transform to world coordinates
+                ray_dir = inv_view_mat.multiply(ray_dir);
+                // Compute the direction
+                ray_dir = ray_dir.subs(ray_origin).normalize();
 
                 // Compute the background gradient
                 float t =0.5f * (ray_dir.normalize().y + 1.0f);
@@ -75,8 +85,13 @@ struct sRT_Scene {
                             &col_point,
                             &col_obj_id)) {
                     out_color = obj_color[col_obj_id];
+
+                    sVector3 normal = sphere_normal(col_point, obj_transforms[col_obj_id]);
+
+                    normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
+
+                    out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
                 }
-                //std::cout << out_depth << std::endl;
                 // Store color on texture
                 raw_fbuffer[get_fb_index(x, y)] = out_color;
             }

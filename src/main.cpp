@@ -130,6 +130,7 @@ void draw_loop(GLFWwindow *window) {
 	sQuadRenderer quad_render = {};
 	quad_render.init();
 
+	float FOV = 100.0f;
 	while(!glfwWindowShouldClose(window)) {
 		// Draw loop
 		int width, heigth;
@@ -164,13 +165,14 @@ void draw_loop(GLFWwindow *window) {
 		prev_frame_time = curr_frame_time;
 
 		rt_scene.render_to_texture(camera,
-								   100.0f,
+								   FOV,
 								   &framebuffer);
 
 		quad_render.render(framebuffer.gpu_id);
 
 		ImGui::Begin("Camera control");
 		ImGui::SliderFloat3("Camera position", camera.position.raw_values, -5.0f, 5.0f);
+		ImGui::SliderFloat("FOV", &FOV, 0.0f, 120.0f);
 		ImGui::End();
 
 		ImGui::Render();

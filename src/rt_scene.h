@@ -94,12 +94,12 @@ struct sRT_Scene {
                     // Shadows
                     // Add a bit of margin, in order to avoid self collisions
                     sVector3 shadow_ray_origin = col_point.sum(normal.mult(0.0001f));
-                    sVector3 shadow_ray_dir = shadow_ray_origin.subs(light_position).normalize();
-                    //sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin);
+                    //sVector3 shadow_ray_dir = shadow_ray_origin.subs(light_position).normalize();
+                    sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
                     sVector3 shadow_col_point = {};
                     uint16_t shadow_col_id = 0;
                     // If there is no collision, then, this pixel is on shadow
-                    if (!raycast(shadow_ray_origin,
+                    if (raycast(shadow_ray_origin,
                                  shadow_ray_dir,
                                  &shadow_col_point,
                                  &shadow_col_id)) {

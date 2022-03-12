@@ -125,6 +125,14 @@ void draw_loop(GLFWwindow *window) {
 	rt_scene.obj_transforms[1].position = {0.35f, 0.4f, 4.0f};
 	rt_scene.obj_color[1] = {0, 255, 0, 1};
 
+
+	rt_scene.is_obj_enabled[2] = true;
+	rt_scene.obj_primitive[2] = RT_SPHERE;
+	rt_scene.obj_transforms[2].scale = {1000.0f, 0.5f, 0.0f};
+	rt_scene.obj_transforms[2].position = {0.0f, -1000.7f, 0.0f};
+	rt_scene.obj_color[2] = {0, 255, 255, 1};
+
+
 	rt_scene.light_position = {-1.0f, 5.0f, 0.0f};
 	rt_scene.light_color = {255, 255, 255, 255};
 

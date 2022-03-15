@@ -39,11 +39,34 @@ inline float ray_sphere_collision(const sVector3 &ray_origin,
     return -1.0f;
 }
 
+
+inline float ray_plane_collision(const sVector3 &ray_origin,
+                                 const sVector3 &ray_dir,
+                                 const sVector3 &plane_origin,
+                                 const sVector3 &plane_normal) {
+    float dot_ray_plane = dot_prod(ray_dir, plane_normal);
+
+    if (dot_ray_plane > 0.0f) {
+        float t = -dot_prod(plane_origin.subs(ray_origin), plane_normal) / dot_ray_plane;
+
+        if (t >= 0.0) {
+            return t;
+        }
+    }
+
+    return -1.0f;
+}
 // ===================
 // PRIMITIVE NORMALS
 // ===================
 inline sVector3 sphere_normal(const sVector3 &point, const sTransform &sphere_transform) {
     return sphere_transform.position.subs(point).invert().normalize();
+}
+
+inline sVector3 plane_normal(const sVector3 &point,
+                             const sVector3 &plane_origin,
+                             const sVector3 &plane_normal) {
+    return plane_normal;
 }
 
 #endif // RT_PRIMITIVES_H_

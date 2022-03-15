@@ -5,6 +5,7 @@
 #include "glcorearb.h"
 #include "math.h"
 #include "render_context.h"
+#include "rt_shading.h"
 #include "texture.h"
 #include "transform.h"
 #include "rt_primitives.h"
@@ -50,8 +51,6 @@ struct sRT_Scene {
         uColor_RGBA8 *raw_fbuffer = (uColor_RGBA8*) malloc(sizeof(uColor_RGBA8) * render_heigth * render_width);
         memset(raw_fbuffer, 0, sizeof(uColor_RGBA8) * render_heigth * render_width);
 
-        uColor_RGBA8 sky_color_1 = {255, 255, 255, 255};
-        uColor_RGBA8 sky_color_2 = {0, 0, 0, 255};
 
         sMat44 inv_view_mat = {};
         camera.view_mat.invert(&inv_view_mat);
@@ -75,46 +74,40 @@ struct sRT_Scene {
                 // Compute the direction
                 ray_dir = ray_dir.subs(ray_origin).normalize();
 
-                // Compute the background gradient
-                float t = 0.5f * (ray_dir.normalize().y + 1.0f);
-                uColor_RGBA8 out_color = LERP(sky_color_1, sky_color_2, t);
 
                 sVector3 col_point = {};
                 uint16_t col_obj_id = 0;
 
+                uColor_RGBA8 out_color = {};
                 if (raycast(ray_origin,
                             ray_dir,
                             &col_point,
                             &col_obj_id)) {
+                    // There is an object, so we test if its in teh shadow, and we render it
                     // Add basic diffuse color
-                    out_color = obj_color[col_obj_id];
-
                     sVector3 normal = sphere_normal(col_point, obj_transforms[col_obj_id]);
 
                     // Shadows
-                    // Add a bit of margin, in order to avoid self collisions
                     sVector3 shadow_ray_origin = col_point.sum(normal.mult(0.0001f));
-                    //sVector3 shadow_ray_dir = shadow_ray_origin.subs(light_position).normalize();
                     sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
                     sVector3 shadow_col_point = {};
                     uint16_t shadow_col_id = 0;
-                    // If there is no collision, then, this pixel is on shadow
-                    if (raycast(shadow_ray_origin,
-                                 shadow_ray_dir,
-                                 &shadow_col_point,
-                                 &shadow_col_id)) {
-                        // Darken the base color
-                        out_color = LERP(out_color, {0, 0, 0, 255}, 0.5f);
-                    } else {
-                        // Draw the base color with a bit of shine
-                        sVector3 l = light_position.subs(col_point).normalize();
-                        float n_dot_l = MAX(dot_prod(l, normal), 0.0f);
 
-                        out_color = LERP(out_color, light_color, n_dot_l);
-                    }
+                    // Compute color
+                    out_color = simple_shader(col_point,
+                                              normal,
+                                              obj_color[col_obj_id],
+                                              light_position,
+                                              light_color,
+                                              raycast(shadow_ray_origin,
+                                                      shadow_ray_dir,
+                                                      &shadow_col_point,
+                                                      &shadow_col_id));
 
                     //normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
                     //out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
+                } else {
+                    out_color = simple_sky_shader(ray_dir.normalize());
                 }
                 // Store color on texture
                 raw_fbuffer[get_fb_index(x, y)] = out_color;
@@ -147,7 +140,10 @@ struct sRT_Scene {
                 case RT_SPHERE: t_of_hit = ray_sphere_collision(ray_origin,
                                                                 ray_direction,
                                                                 obj_transforms[i]); break;
-                case RT_PLANE: break;
+                case RT_PLANE: t_of_hit = ray_plane_collision(ray_origin,
+                                                              ray_direction,
+                                                              obj_transforms[i].position,
+                                                              sVector3{}); break;
                 case RT_PRIMITIVE_COUNT: break; // Just for removing the warning
             }
 

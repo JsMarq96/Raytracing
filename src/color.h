@@ -17,6 +17,14 @@ union uColor_RGBA8 {
     };
 
     uint32_t  color;
+
+    inline uColor_RGBA8 multiply_RGB(const float t) const {
+        return {(uint8_t) (R * t),(uint8_t) (G * t), (uint8_t) (B * t), A};
+    }
+
+    inline uColor_RGBA8 sum_RGB(const uColor_RGBA8 &color) const {
+        return {(uint8_t) (R + color.R), (uint8_t) (G + color.G), (uint8_t) (B + color.B), A};
+    }
 };
 
 inline uColor_RGBA8 LERP(const uColor_RGBA8 &c1,

@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "texture_gpu.h"
 #include "vector.h"
+#include "rt_material.h"
 
 #include <cstdint>
 
@@ -21,8 +22,8 @@ struct sRT_Scene {
     // Object data
     bool       is_obj_enabled[RT_OBJ_COUNT] = {};
     eRT_Prim   obj_primitive[RT_OBJ_COUNT] {};
+    sRT_Material obj_material[RT_OBJ_COUNT] = {};
     sTransform obj_transforms[RT_OBJ_COUNT] = {};
-    uColor_RGBA8   obj_color[RT_OBJ_COUNT] = {};
 
     // Light data
     sVector3  light_position = {};
@@ -32,7 +33,7 @@ struct sRT_Scene {
 
     void init() {
         memset(is_obj_enabled, false, sizeof(sRT_Scene::is_obj_enabled));
-        memset(obj_color, 0, sizeof(sRT_Scene::obj_color));
+        memset(obj_material, 0, sizeof(sRT_Scene::obj_material));
     }
 
     // Helper function
@@ -96,9 +97,10 @@ struct sRT_Scene {
                     // Compute color
                     out_color = simple_shader(col_point,
                                               normal,
-                                              obj_color[col_obj_id],
+                                              obj_material[col_obj_id],
                                               light_position,
                                               light_color,
+                                              camera.position,
                                               raycast(shadow_ray_origin,
                                                       shadow_ray_dir,
                                                       &shadow_col_point,

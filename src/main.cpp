@@ -175,6 +175,7 @@ void draw_loop(GLFWwindow *window) {
 		double elapsed_time = curr_frame_time - prev_frame_time;
 		prev_frame_time = curr_frame_time;
 
+
 		rt_scene.render_to_texture(camera,
 								   FOV,
 								   &framebuffer);
@@ -182,6 +183,7 @@ void draw_loop(GLFWwindow *window) {
 		quad_render.render(framebuffer.gpu_id);
 
 		ImGui::Begin("Scene control");
+		ImGui::Text("FPS: %f", 1.0f / elapsed_time);
 		ImGui::SliderFloat3("Light position", rt_scene.light_position.raw_values, -7.0f, 7.0f);
 		ImGui::SliderFloat3("Camera position", camera.position.raw_values, -5.0f, 5.0f);
 		ImGui::SliderFloat("FOV", &FOV, 0.0f, 120.0f);

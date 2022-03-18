@@ -75,44 +75,11 @@ struct sRT_Scene {
                 // Compute the direction
                 ray_dir = ray_dir.subs(ray_origin).normalize();
 
-
-                sVector3 col_point = {};
-                uint16_t col_obj_id = 0;
-
-                uColor_RGBA8 out_color = {};
-                if (raycast(ray_origin,
-                            ray_dir,
-                            &col_point,
-                            &col_obj_id)) {
-                    // There is an object, so we test if its in teh shadow, and we render it
-                    // Add basic diffuse color
-                    sVector3 normal = sphere_normal(col_point, obj_transforms[col_obj_id]);
-
-                    // Shadows
-                    sVector3 shadow_ray_origin = col_point.sum(normal.mult(0.0001f));
-                    sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
-                    sVector3 shadow_col_point = {};
-                    uint16_t shadow_col_id = 0;
-
-                    // Compute color
-                    out_color = simple_shader(col_point,
-                                              normal,
-                                              obj_material[col_obj_id],
-                                              light_position,
-                                              light_color,
-                                              camera.position,
-                                              raycast(shadow_ray_origin,
-                                                      shadow_ray_dir,
-                                                      &shadow_col_point,
-                                                      &shadow_col_id));
-
-                    //normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
-                    //out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
-                } else {
-                    out_color = simple_sky_shader(ray_dir.normalize());
-                }
                 // Store color on texture
-                raw_fbuffer[get_fb_index(x, y)] = out_color;
+                raw_fbuffer[get_fb_index(x, y)] = get_ray_color(ray_origin,
+                                                                ray_dir,
+                                                                camera.position,
+                                                                1);
             }
         }
         // Upload raw data to GPU texture
@@ -123,6 +90,52 @@ struct sRT_Scene {
                                      GL_UNSIGNED_BYTE);
 
         free(raw_fbuffer);
+    }
+
+    inline uColor_RGBA8 get_ray_color(const sVector3 &ray_origin,
+                                      const sVector3 &ray_dir,
+                                      const sVector3 &camera_position,
+                                      const uint8_t allowed_bounces) const {
+        uColor_RGBA8 out_color = {};
+        sVector3 col_point = {};
+        uint16_t col_obj_id = 0;
+
+        for(uint8_t bounce_it = 0; bounce_it < allowed_bounces; bounce_it++) {
+            if (raycast(ray_origin,
+                        ray_dir,
+                        &col_point,
+                        &col_obj_id)) {
+                // There is an object, so we test if its in teh shadow, and we render it
+                // Add basic diffuse color
+                sVector3 normal = sphere_normal(col_point,
+                                                obj_transforms[col_obj_id]);
+
+                // Shadows
+                sVector3 shadow_ray_origin = col_point.sum(normal.mult(0.0001f));
+                sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
+                sVector3 shadow_col_point = {};
+                uint16_t shadow_col_id = 0;
+
+                // Compute color
+                out_color = simple_shader(col_point,
+                                          normal,
+                                          obj_material[col_obj_id],
+                                          light_position,
+                                              light_color,
+                                              camera_position,
+                                              raycast(shadow_ray_origin,
+                                                      shadow_ray_dir,
+                                                      &shadow_col_point,
+                                                      &shadow_col_id));
+
+                //normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
+                //out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
+            } else {
+                out_color = simple_sky_shader(ray_dir.normalize());
+            }
+        }
+
+        return out_color;
     }
 
     inline bool raycast(const sVector3 &ray_origin,

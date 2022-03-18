@@ -79,7 +79,7 @@ struct sRT_Scene {
                 raw_fbuffer[get_fb_index(x, y)] = get_ray_color(ray_origin,
                                                                 ray_dir,
                                                                 camera.position,
-                                                                1);
+                                                                2);
             }
         }
         // Upload raw data to GPU texture
@@ -95,45 +95,72 @@ struct sRT_Scene {
     inline uColor_RGBA8 get_ray_color(const sVector3 &ray_origin,
                                       const sVector3 &ray_dir,
                                       const sVector3 &camera_position,
-                                      const uint8_t allowed_bounces) const {
-        uColor_RGBA8 out_color = {};
+                                      const uint16_t allowed_bounces) const {
         sVector3 col_point = {};
         uint16_t col_obj_id = 0;
 
-        for(uint8_t bounce_it = 0; bounce_it < allowed_bounces; bounce_it++) {
-            if (raycast(ray_origin,
-                        ray_dir,
+        uint16_t *obj_bounce_trayectory = (uint16_t*) malloc(sizeof(uint16_t) * (allowed_bounces + 1));
+        // Note: maybe we can also mix this two allocs
+        sVector3 *obj_bounce_point = (sVector3*) malloc(sizeof(sVector3) * (allowed_bounces + 1));
+        sVector3 *bounce_point_normal = (sVector3*) malloc(sizeof(sVector3) * (allowed_bounces + 1));
+        uint16_t bounce_it = 0;
+
+        obj_bounce_point[0] = ray_origin;
+        bounce_point_normal[0] = ray_dir;
+
+        for(; bounce_it < allowed_bounces; bounce_it++) {
+            sVector3 normal = {};
+            if (raycast(obj_bounce_point[bounce_it],
+                        bounce_point_normal[bounce_it],
                         &col_point,
                         &col_obj_id)) {
-                // There is an object, so we test if its in teh shadow, and we render it
-                // Add basic diffuse color
-                sVector3 normal = sphere_normal(col_point,
-                                                obj_transforms[col_obj_id]);
+                //std::cout << "en" << std::endl;
+                normal = sphere_normal(col_point,
+                                       obj_transforms[col_obj_id]);
 
-                // Shadows
-                sVector3 shadow_ray_origin = col_point.sum(normal.mult(0.0001f));
-                sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
-                sVector3 shadow_col_point = {};
-                uint16_t shadow_col_id = 0;
-
-                // Compute color
-                out_color = simple_shader(col_point,
-                                          normal,
-                                          obj_material[col_obj_id],
-                                          light_position,
-                                              light_color,
-                                              camera_position,
-                                              raycast(shadow_ray_origin,
-                                                      shadow_ray_dir,
-                                                      &shadow_col_point,
-                                                      &shadow_col_id));
-
-                //normal = normal.sum({1.0f, 1.0f, 1.0f}).mult(0.5f).normalize();
-                //out_color = uColor_RGBA8{(uint8_t) (normal.x * 255.0f), (uint8_t) (normal.y * 255.0f), (uint8_t) (normal.z * 255.0f), 255};
+                // Prepare for the next ray iteration
+                obj_bounce_point[bounce_it+1] = col_point;
+                obj_bounce_trayectory[bounce_it+1] = col_obj_id;
+                bounce_point_normal[bounce_it+1] = normal;
             } else {
-                out_color = simple_sky_shader(ray_dir.normalize());
+                // Early stop if there is no figure to bounce off
+                //out_color = simple_sky_shader(ray_dir.normalize());
+                break;
             }
         }
+        //std::cout << bounce_it << std::endl;
+
+        // Start iterations with sky color (if any)
+        uColor_RGBA8 out_color = simple_sky_shader(bounce_point_normal[bounce_it].normalize());
+
+        // traceback the bounces
+        for(uint8_t i = bounce_it; i > 0; i--) {
+            //std::cout << i << std::endl;
+            // Shadows
+            sVector3 shadow_ray_origin = col_point.sum(bounce_point_normal[i].mult(0.0001f));
+            sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
+            sVector3 shadow_col_point = {};
+            uint16_t shadow_col_id = 0;
+
+            // Compute color
+            uColor_RGBA8 frag_color = simple_shader(obj_bounce_point[i],
+                                                    bounce_point_normal[i],
+                                                    obj_material[obj_bounce_trayectory[i]],
+                                                    light_position,
+                                                    light_color,
+                                                    camera_position,
+                                                    raycast(shadow_ray_origin,
+                                                            shadow_ray_dir,
+                                                            &shadow_col_point,
+                                                            &shadow_col_id));
+
+            // Mix those colors based on the metalness
+            out_color = LERP(out_color, frag_color, obj_material[obj_bounce_trayectory[i]].metalness);
+        }
+
+        free(obj_bounce_point);
+        free(obj_bounce_trayectory);
+        free(bounce_point_normal);
 
         return out_color;
     }

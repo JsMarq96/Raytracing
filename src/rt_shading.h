@@ -8,7 +8,7 @@
 
 inline uColor_RGBA8 simple_sky_shader(const sVector3 &norm_ray_dir) {
     uColor_RGBA8 sky_color_1 = {255, 255, 255, 255};
-    uColor_RGBA8 sky_color_2 = {0, 0, 0, 255};
+    uColor_RGBA8 sky_color_2 = {0, 20, 150, 255};
 
     // Compute the background gradient
     float t = 0.5f * (norm_ray_dir.normalize().y + 1.0f);

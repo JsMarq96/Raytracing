@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include "math.h"
+#include "vector.h"
 
 /**
  * Color format definitions
@@ -35,6 +36,14 @@ inline uColor_RGBA8 LERP(const uColor_RGBA8 &c1,
     (uint8_t) LERP(c1.G, c2.G, t),
     (uint8_t) LERP(c1.B, c2.B, t),
     (uint8_t) LERP(c1.A, c2.A, t) };
+}
+
+inline uColor_RGBA8 vector_to_color(const sVector3 &vect) {
+    return {(uint8_t) (255.0f * vect.x), (uint8_t) (255.0f * vect.y), (uint8_t) (255.0f * vect.z), 255};
+}
+
+inline sVector3 color_to_vector(const uColor_RGBA8 &color) {
+    return {color.R / 255.0f, color.G / 255.0f, color.B / 255.0f};
 }
 
 #endif // COLOR_H_

@@ -115,27 +115,30 @@ void draw_loop(GLFWwindow *window) {
 
 	rt_scene.is_obj_enabled[0] = true;
 	rt_scene.obj_primitive[0] = RT_SPHERE;
-	rt_scene.obj_transforms[0].scale = {0.25f, 0.5f, 0.0f};
-	rt_scene.obj_transforms[0].position = {0.0f, 0.0f, 2.0f};
+	rt_scene.obj_transforms[0].scale = {0.25f, 0.0f, 0.0f};
+	rt_scene.obj_transforms[0].position = {0.0f, 0.3f, 2.0f};
 	rt_scene.obj_material[0].albedo = {255, 0, 0, 1};
-	rt_scene.obj_material[0].metalness = 0.4f;
+	rt_scene.obj_material[0].metalness = 0.1f;
+	rt_scene.obj_material[0].roughness = 1.0f;
 
 	rt_scene.is_obj_enabled[1] = true;
 	rt_scene.obj_primitive[1] = RT_SPHERE;
 	rt_scene.obj_transforms[1].scale = {0.35f, 0.5f, 0.0f};
 	rt_scene.obj_transforms[1].position = {0.35f, 0.4f, 4.0f};
 	rt_scene.obj_material[1].albedo = {0, 255, 0, 1};
-	rt_scene.obj_material[0].metalness = 0.2f;
+	rt_scene.obj_material[1].metalness = 0.9f;
+	rt_scene.obj_material[1].roughness = 0.3f;
 
 	rt_scene.is_obj_enabled[2] = true;
 	rt_scene.obj_primitive[2] = RT_SPHERE;
 	rt_scene.obj_transforms[2].scale = {1000.0f, 0.5f, 0.0f};
 	rt_scene.obj_transforms[2].position = {0.0f, -1000.7f, 0.0f};
 	rt_scene.obj_material[2].albedo = {0, 255, 255, 1};
-	rt_scene.obj_material[0].metalness = 0.35f;
+	rt_scene.obj_material[2].metalness = 0.001f;
+	rt_scene.obj_material[2].roughness = 0.9f;
 
 
-	rt_scene.light_position = {-1.0f, 5.0f, 0.0f};
+	rt_scene.light_position = {-1.0f, 25.0f, 0.0f};
 	rt_scene.light_color = {255, 255, 255, 255};
 
 	sGPU_Texture framebuffer = {};
@@ -186,7 +189,7 @@ void draw_loop(GLFWwindow *window) {
 
 		ImGui::Begin("Scene control");
 		ImGui::Text("FPS: %f", 1.0f / elapsed_time);
-		ImGui::SliderFloat3("Light position", rt_scene.light_position.raw_values, -7.0f, 7.0f);
+		ImGui::SliderFloat3("Light position", rt_scene.light_position.raw_values, -27.0f, 27.0f);
 		ImGui::SliderFloat3("Camera position", camera.position.raw_values, -5.0f, 5.0f);
 		ImGui::SliderFloat("FOV", &FOV, 0.0f, 120.0f);
 		ImGui::End();

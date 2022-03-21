@@ -79,7 +79,7 @@ struct sRT_Scene {
                 raw_fbuffer[get_fb_index(x, y)] = get_ray_color(ray_origin,
                                                                 ray_dir,
                                                                 camera.position,
-                                                                2);
+                                                                1);
             }
         }
         // Upload raw data to GPU texture
@@ -121,7 +121,8 @@ struct sRT_Scene {
                 // Prepare for the next ray iteration
                 obj_bounce_point[bounce_it+1] = col_point;
                 obj_bounce_trayectory[bounce_it+1] = col_obj_id;
-                bounce_point_normal[bounce_it+1] = normal;
+                bounce_point_normal[bounce_it+1] = reflect_vector(bounce_point_normal[bounce_it],
+                                                                  normal);
             } else {
                 // Early stop if there is no figure to bounce off
                 //out_color = simple_sky_shader(ray_dir.normalize());
@@ -137,25 +138,32 @@ struct sRT_Scene {
         for(uint8_t i = bounce_it; i > 0; i--) {
             //std::cout << i << std::endl;
             // Shadows
-            sVector3 shadow_ray_origin = col_point.sum(bounce_point_normal[i].mult(0.0001f));
+            sVector3 shadow_ray_origin = col_point.sum(bounce_point_normal[i].mult(0.01f));
             sVector3 shadow_ray_dir = light_position.subs(shadow_ray_origin).normalize();
             sVector3 shadow_col_point = {};
             uint16_t shadow_col_id = 0;
 
+            float fragment_shadow_distance = -1.0f;
+            if (!raycast(shadow_ray_origin,
+                        shadow_ray_dir,
+                        &shadow_col_point,
+                        &shadow_col_id)) {
+                fragment_shadow_distance = light_position.subs(shadow_col_point).magnitude();
+             }
+
             // Compute color
-            uColor_RGBA8 frag_color = simple_shader(obj_bounce_point[i],
-                                                    bounce_point_normal[i],
-                                                    obj_material[obj_bounce_trayectory[i]],
-                                                    light_position,
-                                                    light_color,
-                                                    camera_position,
-                                                    raycast(shadow_ray_origin,
-                                                            shadow_ray_dir,
-                                                            &shadow_col_point,
-                                                            &shadow_col_id));
+            uColor_RGBA8 frag_color = GI_shader(obj_bounce_point[i],
+                                                 bounce_point_normal[i],
+                                                 obj_material[obj_bounce_trayectory[i]],
+                                                 light_position,
+                                                 light_color,
+                                                 camera_position,
+                                                 fragment_shadow_distance);
 
             // Mix those colors based on the metalness
-            out_color = LERP(out_color, frag_color, obj_material[obj_bounce_trayectory[i]].metalness);
+            //out_color = out_color.sum_RGB(frag_color);
+            out_color = frag_color;
+            //out_color = LERP(frag_color, out_color, 1.0f - obj_material[obj_bounce_trayectory[i]].metalness);
         }
 
         free(obj_bounce_point);
